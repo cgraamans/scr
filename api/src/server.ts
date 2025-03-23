@@ -3,24 +3,17 @@ import { type Request, type Response } from "express";
 import { createServer } from "node:http";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import passport from "passport";
-import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import bodyParser from "body-parser";
-import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
+import { Server } from "socket.io";
+
 import db from "./services/db";
 
-// declare global {
-//   namespace Express {
-//     interface User {
-//       id: number;
-//       username: string;
-//     }
-//   }
-// }
+import dataRoute from "./routes/data";
+import { expressConfig } from "./config/express.config";
 
-const port = process.env.PORT || 3000;
-const jwtSecret = "Mys3cr3t";
+const port = process.env.SCR_API_PORT || expressConfig.port;
+const jwtSecret = process.env.SCR_API_SECRET || "TESTSECRET";
 
 const app = express();
 const httpServer = createServer(app);
@@ -29,21 +22,13 @@ app.use(bodyParser.json());
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// app.use("/data/",dataRoute)
+
 app.get("/", (req, res) => {
   res.sendFile(join(__dirname, "index.html"));
 });
 
-// app.get(
-//   "/self",
-//   passport.authenticate("jwt", { session: false }),
-//   (req, res) => {
-//     if (req.user) {
-//       res.send(req.user);
-//     } else {
-//       res.status(401).end();
-//     }
-//   },
-// );
+
 
 app.post("/login", (req, res) => {
   if (req.body.username === "john" && req.body.password === "changeit") {
@@ -73,35 +58,12 @@ app.post("/login", (req, res) => {
   }
 });
 
-// const jwtDecodeOptions = {
-//   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-//   secretOrKey: jwtSecret,
-//   // issuer: "accounts.examplesoft.com",
-//   // audience: "yoursite.net",
-// };
-
-// passport.use(
-//   new JwtStrategy(jwtDecodeOptions, (payload, done) => {
-//     return done(null, payload.data);
-//   }),
-// );
 
 const io = new Server(httpServer,{
   cors:{
     origin:"*"
   }
 });
-
-// io.engine.use(
-//   (req: { _query: Record<string, string> }, res: Response, next: Function) => {
-//     const isHandshake = req._query.sid === undefined;
-//     if (isHandshake) {
-//       passport.authenticate("jwt", { session: false })(req, res, next);
-//     } else {
-//       next();
-//     }
-//   },
-// );
 
 io.use((socket,next)=>{
 
@@ -143,7 +105,7 @@ io.on("connection", (socket) => {
 
   });
 
-  const req = socket.request as Request & { user: Express.User };
+  // const req = socket.request as Request & { user: Express.User };
 
   // socket.join(`user:${req.user.id}`);
 
